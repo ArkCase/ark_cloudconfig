@@ -1,18 +1,3 @@
-###########################################################################################################
-#
-# How to build:
-#
-# docker build -t 345280441424.dkr.ecr.ap-south-1.amazonaws.com/ark_cloudconfig:latest .
-# docker push 345280441424.dkr.ecr.ap-south-1.amazonaws.com/ark_cloudconfig:latest
-#
-# How to run: (Helm)
-#
-# helm repo add arkcase https://arkcase.github.io/ark_helm_charts/
-# helm install ark_cloudconfig arkcase/ark_cloudconfig
-# helm uninstall ark_cloudconfig
-#
-###########################################################################################################
-
 #
 # Basic Parameters
 #
@@ -47,7 +32,7 @@ ENV JAVA_HOME="/usr/lib/jvm/java"
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
-ENV MVN_VER="3.8.7"
+ENV MVN_VER="${MVN_VER}"
 ENV MVN_SRC="https://dlcdn.apache.org/maven/maven-3/${MVN_VER}/binaries/apache-maven-${MVN_VER}-bin.tar.gz"
 
 WORKDIR "/src"
@@ -74,7 +59,7 @@ ARG ARCH
 ARG OS
 ARG VER
 ARG PKG
-ARG APP_UID="1997"
+ARG APP_UID="997"
 ARG APP_GID="${APP_UID}"
 ARG APP_USER="${PKG}"
 ARG APP_GROUP="${APP_USER}"
@@ -82,30 +67,30 @@ ARG BASE_DIR="/app"
 ARG DATA_DIR="${BASE_DIR}/data"
 ARG TEMP_DIR="${BASE_DIR}/tmp"
 ARG HOME_DIR="${BASE_DIR}/home"
-ARG RESOURCE_PATH="artifacts"
-ARG SRC 
+ARG RESOURCE_PATH="artifacts" 
+ARG SRC
 ARG MAIN_CONF="application.yml"
 
-LABEL ORG="ArkCase LLC" \
-      MAINTAINER="Armedia Devops Team <devops@armedia.com>" \
-      APP="Cloudconfig" \
-      VERSION="${VER}"
+LABEL ORG="ArkCase LLC"
+LABEL MAINTAINER="Armedia Devops Team <devops@armedia.com>"
+LABEL APP="Cloudconfig"
+LABEL VERSION="${VER}"
 
 # Environment variables
-ENV APP_UID="${APP_UID}" \
-    APP_GID="${APP_GID}" \
-    APP_USER="${APP_USER}" \
-    APP_GROUP="${APP_GROUP}" \
-    JAVA_HOME="/usr/lib/jvm/java" \
-    LANG="en_US.UTF-8" \
-    LANGUAGE="en_US:en" \
-    LC_ALL="en_US.UTF-8" \
-    BASE_DIR="${BASE_DIR}" \ 
-    DATA_DIR="${DATA_DIR}" \
-    TEMP_DIR="${TEMP_DIR}" \
-    HOME_DIR="${HOME_DIR}" \
-    EXE_JAR="config-server-${VER}.jar" \
-    MAIN_CONF="${MAIN_CONF}"
+ENV APP_UID="${APP_UID}"
+ENV APP_GID="${APP_GID}"
+ENV APP_USER="${APP_USER}"
+ENV APP_GROUP="${APP_GROUP}"
+ENV JAVA_HOME="/usr/lib/jvm/java"
+ENV LANG="en_US.UTF-8"
+ENV LANGUAGE="en_US:en"
+ENV LC_ALL="en_US.UTF-8"
+ENV BASE_DIR="${BASE_DIR}"
+ENV DATA_DIR="${DATA_DIR}"
+ENV TEMP_DIR="${TEMP_DIR}"
+ENV HOME_DIR="${HOME_DIR}"
+ENV EXE_JAR="config-server-${VER}.jar"
+ENV MAIN_CONF="${MAIN_CONF}"
 
 WORKDIR "${BASE_DIR}"
 
@@ -113,7 +98,7 @@ WORKDIR "${BASE_DIR}"
 # First, install the JDK
 #################
 
-RUN yum update -y && yum -y install java-1.8.0-openjdk-devel git && yum clean all
+RUN yum update -y && yum -y install java-11-openjdk-devel git && yum clean all
 
 #################
 # Build ConfigServer
@@ -122,121 +107,21 @@ RUN yum update -y && yum -y install java-1.8.0-openjdk-devel git && yum clean al
 #
 # Create the requisite user and group
 #
-RUN groupadd --system --gid "${APP_GID}" "${APP_GROUP}" && \
-    useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --create-home --home-dir "${HOME_DIR}" "${APP_USER}"
+RUN groupadd --system --gid "${APP_GID}" "${APP_GROUP}"
+RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --create-home --home-dir "${HOME_DIR}" "${APP_USER}"
 
 #
 # COPY the application war files
 #
 COPY --from=src "/src/target/${EXE_JAR}" "${BASE_DIR}/${EXE_JAR}"
 ADD --chown="${APP_USER}:${APP_GROUP}" "entrypoint" "/entrypoint"
-ADD --chown="${APP_USER}:${APP_GROUP}" "starttomcat" "/starttomcat"
 
-RUN rm -rf /tmp/* && \
-    mkdir -p "${TEMP_DIR}" "${DATA_DIR}" && \
-    chown -R "${APP_USER}:${APP_GROUP}" "${BASE_DIR}" && \
-    chmod -R "u=rwX,g=rX,o=" "${BASE_DIR}" 
-
-##################################################### ARKCASE: BELOW ###############################################################
-
-ARG BUILD_SERVER=iad032-1san01.appdev.armedia.com
-
-ARG ARKCASE_VERSION=2021.03.19
-ARG TOMCAT_VERSION=9.0.50
-ARG TOMCAT_MAJOR_VERSION=9
-ARG SYMMETRIC_KEY=9999999999999999999999
-ARG resource_path=artifacts
-ARG MARIADB_CONNECTOR_VERSION=2.2.5
-
-ENV LANG=en_US.UTF-8 \
-    LANGUAGE=en_US:en \
-    LC_ALL=en_US.UTF-8
-
-#################
-# Build Arkcase
-#################
-ENV NODE_ENV="production" \
-    ARKCASE_APP="/app/arkcase" \
-    TMP=/app/arkcase/tmp \
-    TEMP=/app/arkcase/tmp \
-    PATH=$PATH:/app/tomcat/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin\
-    SSL_CERT=/etc/tls/crt/arkcase-server.crt \
-    SSL_KEY=/etc/tls/private/arkcase-server.pem
-WORKDIR /app
-COPY ${resource_path}/server.xml \
-    ${resource_path}/logging.properties \
-    ${resource_path}/arkcase-server.crt \
-    ${resource_path}/arkcase-server.pem ./
-
-#RUN curl https://project.armedia.com/nexus/repository/arkcase/com/armedia/acm/acm-standard-applications/arkcase/${ARKCASE_VERSION}/arkcase-${ARKCASE_VERSION}.war -o /app/arkcase-${ARKCASE_VERSION}.war
-
-
-#RUN curl https://project.armedia.com/nexus/repository/arkcase/com/armedia/arkcase/arkcase-config-core/${ARKCASE_VERSION}/arkcase-config-core-${ARKCASE_VERSION}.zip -o /tmp/arkcase-config-core-${ARKCASE_VERSION}.zip
-
-# ADD yarn repo and nodejs package
-ADD https://dl.yarnpkg.com/rpm/yarn.repo /etc/yum.repos.d/yarn.repo
-ADD https://archive.apache.org/dist/tomcat/tomcat-${TOMCAT_MAJOR_VERSION}/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz /app
-
-#  \
-RUN yum -y update && \
-    useradd  tomcat --system --user-group -d /app/tmp/ && \
-    mkdir -p ${ARKCASE_APP}/data/arkcase-home && \
-    mkdir -p ${ARKCASE_APP}/common && \
-    mkdir -p /etc/tls/private && \
-    mkdir -p /etc/tls/crt && \
-    yum --assumeyes update && \
-    # Nodejs prerequisites to install native-addons from npm
-    yum install --assumeyes gcc gcc-c++ make openssl wget zip unzip
-RUN yum install --assumeyes nodejs
-RUN npm install -g yarn
-
-
-    #unpack tomcat tar to tomcat directory
-RUN tar -xf apache-tomcat-${TOMCAT_VERSION}.tar.gz && \
-    mv apache-tomcat-${TOMCAT_VERSION} tomcat && \
-    rm apache-tomcat-${TOMCAT_VERSION}.tar.gz &&\
-    # Removal of default/unwanted Applications
-    rm -rf tomcat/webapps/* tomcat/temp/* tomcat/bin/*.bat && \
-    mv server.xml logging.properties tomcat/conf/ && \
-    mkdir -p /tomcat/logs &&\
-    curl https://project.armedia.com/nexus/repository/arkcase/com/armedia/acm/acm-standard-applications/arkcase/${ARKCASE_VERSION}/arkcase-${ARKCASE_VERSION}.war -o /app/tomcat/webapps/arkcase.war && \
-    # mv arkcase-${ARKCASE_VERSION}.war  ./tomcat/webapps/arkcase.war && \
-    #mkdir -p /app/tmp/.arkcase && \
-    # unzip /tmp/arkcase-config-core-2021.03.19.zip -d /app/tmp/.arkcase  &&\
-    ####
-    chown -R "${APP_USER}:${APP_GROUP}" "${BASE_DIR}" && \
-    #### chown -R tomcat:tomcat /app && \
-    chmod u+x tomcat/bin/*.sh &&\
-    # Add default SSL Keys
-    mv /app/arkcase-server.crt  /etc/tls/crt/arkcase-server.crt &&\
-    mv /app/arkcase-server.pem /etc/tls/private/arkcase-server.pem &&\
-    chmod 644 /etc/tls/crt/* &&\
-    chmod 666 /etc/pki/ca-trust/extracted/java/cacerts &&\
-    # Encrypt Symmentric Key
-    echo ${SYMMETRIC_KEY} > ${ARKCASE_APP}/common/symmetricKey.txt &&\
-    openssl x509 -pubkey -noout -in ${SSL_CERT} -noout > ${ARKCASE_APP}/common/arkcase-server.pub &&\
-    openssl rsautl -encrypt -pubin -inkey ${ARKCASE_APP}/common/arkcase-server.pub -in ${ARKCASE_APP}/common/symmetricKey.txt -out ${ARKCASE_APP}/common/symmetricKey.encrypted &&\
-    rm ${ARKCASE_APP}/common/symmetricKey.txt &&\
-    # Remove unwanted package
-    yum clean all
-
-RUN yum -y install epel-release
-RUN yum install -y tesseract tesseract-osd qpdf ImageMagick ImageMagick-devel && \
-    ln -s /usr/bin/convert /usr/bin/magick &&\
-    ln -s /usr/share/tesseract/tessdata/configs/pdf /usr/share/tesseract/tessdata/configs/PDF &&\
-    yum update -y && yum clean all && rm -rf /tmp/* 
-
-ENV CATALINA_OPTS="-Dacm.configurationserver.propertyfile=/app/home/.arkcase/acm/conf.yml"
-##################################################### ARKCASE: ABOVE ###############################################################
+RUN rm -rf /tmp/*
+RUN mkdir -p "${TEMP_DIR}" "${DATA_DIR}"
+RUN chown -R "${APP_USER}:${APP_GROUP}" "${BASE_DIR}"
+RUN chmod -R "u=rwX,g=rX,o=" "${BASE_DIR}"
 
 USER "${APP_USER}"
-
-RUN /usr/bin/ln -s /app/data /app/home/.arkcase &&\
-    mkdir -p /app/tomcat/bin/logs/ &&\
-    mkdir -p /app/logs
-
 EXPOSE 9999
 VOLUME [ "${DATA_DIR}" ]
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
-
 ENTRYPOINT [ "/entrypoint" ]
