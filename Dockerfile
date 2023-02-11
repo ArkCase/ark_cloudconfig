@@ -6,6 +6,8 @@ ARG OS="linux"
 ARG VER="2021.03.11"
 ARG PKG="cloudconfig"
 ARG SRC="https://github.com/ArkCase/acm-config-server.git"
+ARG MVN_VER="3.8.7"
+ARG MVN_SRC="https://dlcdn.apache.org/maven/maven-3/${MVN_VER}/binaries/apache-maven-${MVN_VER}-bin.tar.gz"
 
 FROM 345280441424.dkr.ecr.ap-south-1.amazonaws.com/ark_base:latest as src
 
@@ -17,8 +19,8 @@ ARG OS
 ARG VER
 ARG PKG
 ARG SRC
-ARG MVN_VER="3.8.7"
-ARG MVN_SRC="https://dlcdn.apache.org/maven/maven-3/${MVN_VER}/binaries/apache-maven-${MVN_VER}-bin.tar.gz"
+ARG MVN_VER
+ARG MVN_SRC
 
 LABEL ORG="ArkCase LLC"
 LABEL MAINTAINER="Armedia Devops Team <devops@armedia.com>"
@@ -37,18 +39,29 @@ ENV MVN_SRC="https://dlcdn.apache.org/maven/maven-3/${MVN_VER}/binaries/apache-m
 
 WORKDIR "/src"
 
-# First, install the JDK
-RUN yum update -y && yum -y install java-1.8.0-openjdk-devel git && yum clean all
+##########################
+# First, install the JDK #
+##########################
+RUN yum -y update && \
+    yum -y install java-11-openjdk-devel git && \
+    yum clean all
 
-# Next, the stuff that will be needed for the build
+#####################################################
+# Next, the stuff that will be needed for the build #
+#####################################################
 COPY "mvn" "/usr/bin"
 ADD "${MVN_SRC}" "/"
-RUN echo "Installing Maven ${MVN_VER}..." && tar -C / -xzf "/apache-maven-${MVN_VER}-bin.tar.gz" && mv -vf "/apache-maven-${MVN_VER}" "/mvn"
-RUN echo "Cloning version [${VER}] from [${SRC}]..." && git clone -b "${VER}" "${SRC}" . && ls -l && mvn clean verify
+RUN echo "Installing Maven ${MVN_VER}..." && \
+    tar -C / -xzf "/apache-maven-${MVN_VER}-bin.tar.gz" && \
+    mv -vf "/apache-maven-${MVN_VER}" "/mvn"
 
 ########################################
-# Build ConfigServer                   #
+# Now, build the ConfigServer          #
 ########################################
+RUN echo "Cloning version [${VER}] from [${SRC}]..." && \
+    git clone -b "${VER}" "${SRC}" . && \
+    ls -l && \
+    mvn clean verify
 
 FROM 345280441424.dkr.ecr.ap-south-1.amazonaws.com/ark_base:latest
 
@@ -94,28 +107,29 @@ ENV MAIN_CONF="${MAIN_CONF}"
 
 WORKDIR "${BASE_DIR}"
 
-#################
-# First, install the JDK
-#################
+##########################
+# First, install the JDK #
+##########################
 
-RUN yum update -y && yum -y install java-11-openjdk-devel git && yum clean all
+RUN yum -y update && \
+    yum -y install java-11-openjdk-devel git && \
+    yum clean all
 
-#################
-# Build ConfigServer
-#################
-
-#
-# Create the requisite user and group
-#
+#######################################
+# Create the requisite user and group #
+#######################################
 RUN groupadd --system --gid "${APP_GID}" "${APP_GROUP}"
 RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --create-home --home-dir "${HOME_DIR}" "${APP_USER}"
 
-#
-# COPY the application war files
-#
+#################################
+# COPY the application jar file #
+#################################
 COPY --from=src "/src/target/${EXE_JAR}" "${BASE_DIR}/${EXE_JAR}"
 ADD --chown="${APP_USER}:${APP_GROUP}" "entrypoint" "/entrypoint"
 
+####################################
+# Final preparations for execution #
+####################################
 RUN rm -rf /tmp/*
 RUN mkdir -p "${TEMP_DIR}" "${DATA_DIR}"
 RUN chown -R "${APP_USER}:${APP_GROUP}" "${BASE_DIR}"
