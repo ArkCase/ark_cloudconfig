@@ -24,7 +24,7 @@ urlencode() {
 		esac
 		RESULT+="${O}"
 	done
-	echo "${RESULT}"    # You can either set a return variable (FASTER) 
+	echo "${RESULT}"
 }
 
 #
@@ -105,4 +105,7 @@ CONF="$(urlencode "${CONF}")"
 # Execute it!
 #
 [ ${#} -lt 1 ] && set -- --spring.config.location="file://${CONF}"
-exec "${JAVA}" -jar "${EXE_JAR}" "${@}"
+
+[ -v JAVA_OPTS ] || JAVA_OPTS=""
+
+exec "${JAVA}" -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=80 -jar "${EXE_JAR}" "${@}"
