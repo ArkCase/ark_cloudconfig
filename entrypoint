@@ -108,4 +108,4 @@ CONF="$(urlencode "${CONF}")"
 
 [ -v JAVA_OPTS ] || JAVA_OPTS=""
 
-exec "${JAVA}" -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=80 -jar "${EXE_JAR}" "${@}"
+exec "${JAVA}" ${JAVA_OPTS} -jar "${EXE_JAR}" "${@}"
