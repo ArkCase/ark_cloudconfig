@@ -3,7 +3,7 @@
 #
 ARG ARCH="amd64"
 ARG OS="linux"
-ARG VER="2021.03.25"
+ARG VER="2021.03.26"
 ARG PKG="cloudconfig"
 ARG SRC="https://project.armedia.com/nexus/repository/arkcase/com/armedia/acm/config-server/${VER}/config-server-${VER}.jar"
 ARG APP_USER="${PKG}"
