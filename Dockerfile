@@ -1,6 +1,9 @@
 #
 # Basic Parameters
 #
+ARG PUBLIC_REGISTRY="public.ecr.aws"
+ARG BASE_REPO="arkcase/base"
+ARG BASE_TAG="8.7.0"
 ARG ARCH="amd64"
 ARG OS="linux"
 ARG VER="2021.03.26"
@@ -15,11 +18,8 @@ ARG DATA_DIR="${BASE_DIR}/data"
 ARG INIT_DIR="${BASE_DIR}/init"
 ARG TEMP_DIR="${BASE_DIR}/tmp"
 ARG HOME_DIR="${BASE_DIR}/home"
-ARG BASE_REGISTRY
-ARG BASE_REPO="arkcase/base"
-ARG BASE_TAG="8.7.0"
 
-FROM "${BASE_REGISTRY}/${BASE_REPO}:${BASE_TAG}"
+FROM "${PUBLIC_REGISTRY}/${BASE_REPO}:${BASE_TAG}"
 
 #
 # Basic Parameters
