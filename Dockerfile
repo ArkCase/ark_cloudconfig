@@ -72,7 +72,6 @@ WORKDIR "${BASE_DIR}"
 RUN yum -y update && \
     yum -y install \
         java-11-openjdk-devel \
-        tzdata-java \
     && \
     yum -y clean all
 
