@@ -18,6 +18,18 @@ ARG DATA_DIR="${BASE_DIR}/data"
 ARG INIT_DIR="${BASE_DIR}/init"
 ARG TEMP_DIR="${BASE_DIR}/tmp"
 ARG HOME_DIR="${BASE_DIR}/home"
+ARG LB_VER="4.20.0"
+ARG LB_SRC="https://github.com/liquibase/liquibase/releases/download/v${LB_VER}/liquibase-${LB_VER}.tar.gz"
+ARG MARIADB_DRIVER="3.1.2"
+ARG MARIADB_DRIVER_URL="https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_DRIVER}/mariadb-java-client-${MARIADB_DRIVER}.jar"
+ARG MSSQL_DRIVER="12.2.0.jre11"
+ARG MSSQL_DRIVER_URL="https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/${MSSQL_DRIVER}/mssql-jdbc-${MSSQL_DRIVER}.jar"
+ARG MYSQL_DRIVER="8.0.32"
+ARG MYSQL_DRIVER_URL="https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/${MYSQL_DRIVER}/mysql-connector-j-${MYSQL_DRIVER}.jar"
+ARG ORACLE_DRIVER="21.9.0.0"
+ARG ORACLE_DRIVER_URL="https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/${ORACLE_DRIVER}/ojdbc11-${ORACLE_DRIVER}.jar"
+ARG POSTGRES_DRIVER="42.5.4"
+ARG POSTGRES_DRIVER_URL="https://repo1.maven.org/maven2/org/postgresql/postgresql/${POSTGRES_DRIVER}/postgresql-${POSTGRES_DRIVER}.jar"
 
 FROM "${PUBLIC_REGISTRY}/${BASE_REPO}:${BASE_TAG}"
 
@@ -40,6 +52,18 @@ ARG DATA_DIR
 ARG INIT_DIR
 ARG TEMP_DIR
 ARG HOME_DIR
+ARG LB_VER
+ARG LB_SRC
+ARG MARIADB_DRIVER
+ARG MARIADB_DRIVER_URL
+ARG MSSQL_DRIVER
+ARG MSSQL_DRIVER_URL
+ARG MYSQL_DRIVER
+ARG MYSQL_DRIVER_URL
+ARG ORACLE_DRIVER
+ARG ORACLE_DRIVER_URL
+ARG POSTGRES_DRIVER
+ARG POSTGRES_DRIVER_URL
 
 LABEL ORG="ArkCase LLC"
 LABEL MAINTAINER="Armedia Devops Team <devops@armedia.com>"
@@ -62,6 +86,8 @@ ENV TEMP_DIR="${TEMP_DIR}"
 ENV HOME_DIR="${HOME_DIR}"
 ENV EXE_JAR="config-server-${VER}.jar"
 ENV HOME="${HOME_DIR}"
+ENV LB_DIR="${BASE_DIR}/lb"
+ENV LB_TAR="${BASE_DIR}/lb.tar.gz"
 
 WORKDIR "${BASE_DIR}"
 
@@ -84,6 +110,29 @@ RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --create-home --ho
 #################################
 ADD --chown="${APP_USER}:${APP_GROUP}" "${SRC}" "${BASE_DIR}/${EXE_JAR}"
 ADD --chown="${APP_USER}:${APP_GROUP}" "entrypoint" "/entrypoint"
+
+##############################################
+# Install Liquibase, and add all the drivers #
+##############################################
+RUN curl -L -o "${LB_TAR}" "${LB_SRC}" && \
+    mkdir -p "${LB_DIR}" && \
+    tar -C "${LB_DIR}" -xzvf "${LB_TAR}" && \
+    rm -rf "${LB_TAR}" && \
+    cd "${LB_DIR}" && \
+    rm -fv \
+        "internal/lib/mssql-jdbc.jar" \
+        "internal/lib/ojdbc8.jar" \
+        "internal/lib/mariadb-java-client.jar" \
+        "internal/lib/postgresql.jar" \
+        && \
+    curl -L "${MYSQL_DRIVER_URL}" -o "internal/lib/mysql-connector-j-${MYSQL_DRIVER}.jar" && \
+    curl -L "${MARIADB_DRIVER_URL}" -o "internal/lib/lib/mariadb-java-client-${MARIADB_DRIVER}.jar" && \
+    curl -L "${MSSQL_DRIVER_URL}" -o "internal/lib/lib/mssql-jdbc-${MSSQL_DRIVER}.jar" && \
+    curl -L "${ORACLE_DRIVER_URL}" -o "internal/lib/lib/ojdbc11-${ORACLE_DRIVER}.jar" && \
+    curl -L "${POSTGRES_DRIVER_URL}" -o "internal/lib/lib/postgresql-${POSTGRES_DRIVER}.jar"
+
+COPY liquibase.properties "${LB_DIR}/"
+COPY "sql" "${LB_DIR}/cloudconfig/"
 
 ####################################
 # Final preparations for execution #
