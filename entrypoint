@@ -27,10 +27,7 @@ urlencode() {
 	echo "${RESULT}"
 }
 
-#
-# TODO: Do we actually want to verify this?
-#
-JAVA="/usr/bin/java"
+JAVA="$(type -P java)" || fail "No Java found in the path"
 
 [ -v BASE_DIR ] || BASE_DIR="/app"
 [ -v DATA_DIR ] || DATA_DIR="${BASE_DIR}/data"
@@ -47,9 +44,9 @@ DATA_DIR="$(readlink -f "${DATA_DIR}")"
 [ -v MAIN_CONF ] || MAIN_CONF="application.yaml"
 [ -v CONF ] || CONF="${DATA_DIR}/${MAIN_CONF}"
 
-#
-# TODO: Initialize and populate if necessary
-#
+
+[ -v SSL_DIR ] || SSL_DIR="/.ssl"
+acme-init
 
 #
 # If our configuration is missing or empty, we render a new one
@@ -70,8 +67,14 @@ if [ ! -s "${CONF}" ] ; then
 		SEARCH_LOCATIONS="${SEARCH_LOCATIONS}file://${LOCATION}"
 	done
 	[ -v ACTIVEMQ_URL ] || ACTIVEMQ_URL="tcp://messaging:61616"
+	KEYSTORE_PASSWORD="$(<"${SSL_DIR}/keystore.pass")"
 	cat > "${CONF}" <<- EOF
-	server.port: "9999"
+	server
+	  port: "9999"
+	  ssl:
+	    key-alias: "acme"
+	    key-store: "${SSL_DIR//\"/\\\"}/keystore.pkcs12"
+	    key-store-password: "${KEYSTORE_PASSWORD//\"/\\\"}"
 	spring.profiles.active: native
 	spring.cloud.config.server.native.searchLocations: "${SEARCH_LOCATIONS}"
 	spring.jms.pub-sub-domain: "true"
