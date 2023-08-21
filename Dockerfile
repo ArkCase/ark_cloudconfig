@@ -79,7 +79,7 @@ RUN yum -y install \
 # Create the requisite user and group #
 #######################################
 RUN groupadd --system --gid "${APP_GID}" "${APP_GROUP}"
-RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --create-home --home-dir "${HOME_DIR}" "${APP_USER}"
+RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --groups "${ACM_GROUP}" --create-home --home-dir "${HOME_DIR}" "${APP_USER}"
 
 #################################
 # COPY the application jar file #
