@@ -70,8 +70,7 @@ WORKDIR "${BASE_DIR}"
 # First, install the JDK #
 ##########################
 
-RUN yum -y update && \
-    yum -y install \
+RUN yum -y install \
         java-11-openjdk-devel \
     && \
     yum -y clean all
