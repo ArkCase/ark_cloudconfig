@@ -71,10 +71,6 @@ if [ ! -s "${CONF}" ] ; then
 	cat > "${CONF}" <<- EOF
 	server
 	  port: "9999"
-	  ssl:
-	    key-alias: "acme"
-	    key-store: "${SSL_DIR//\"/\\\"}/keystore.pkcs12"
-	    key-store-password: "${KEYSTORE_PASSWORD//\"/\\\"}"
 	spring.profiles.active: native
 	spring.cloud.config.server.native.searchLocations: "${SEARCH_LOCATIONS}"
 	spring.jms.pub-sub-domain: "true"
@@ -110,5 +106,6 @@ CONF="$(urlencode "${CONF}")"
 [ ${#} -lt 1 ] && set -- --spring.config.location="file://${CONF}"
 
 [ -v JAVA_OPTS ] || JAVA_OPTS=""
+JAVA_OPTS+=" -Dserver.ssl.key-alias=acme -Dserver.ssl.key-store=${SSL_DIR}/keystore.pkcs12 -Dserver.ssl.key-store-password=$(<"${SSL_DIR}"/keystore.pass)"
 
 exec "${JAVA}" ${JAVA_OPTS} -jar "${EXE_JAR}" "${@}"
