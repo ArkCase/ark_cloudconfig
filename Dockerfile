@@ -7,7 +7,7 @@ ARG BASE_TAG="8.8-02"
 ARG ARCH="amd64"
 ARG OS="linux"
 ARG VER="2023.01.04"
-ARG BLD="02"
+ARG BLD="03"
 ARG PKG="cloudconfig"
 ARG SRC="https://project.armedia.com/nexus/repository/arkcase/com/armedia/acm/config-server/${VER}/config-server-${VER}.jar"
 ARG APP_USER="${PKG}"
@@ -86,6 +86,7 @@ RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --groups "${ACM_GR
 #################################
 ADD --chown="${APP_USER}:${APP_GROUP}" "${SRC}" "${BASE_DIR}/${EXE_JAR}"
 ADD --chown="${APP_USER}:${APP_GROUP}" "entrypoint" "/entrypoint"
+COPY --chown=root:root "check-ready" "/usr/local/bin/"
 
 ####################################
 # Final preparations for execution #
