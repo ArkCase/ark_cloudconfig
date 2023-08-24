@@ -3,11 +3,11 @@
 #
 ARG PUBLIC_REGISTRY="public.ecr.aws"
 ARG BASE_REPO="arkcase/base"
-ARG BASE_TAG="8.8-01"
+ARG BASE_TAG="8.8-02"
 ARG ARCH="amd64"
 ARG OS="linux"
 ARG VER="2023.01.04"
-ARG BLD="01"
+ARG BLD="02"
 ARG PKG="cloudconfig"
 ARG SRC="https://project.armedia.com/nexus/repository/arkcase/com/armedia/acm/config-server/${VER}/config-server-${VER}.jar"
 ARG APP_USER="${PKG}"
