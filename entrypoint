@@ -10,6 +10,22 @@ fail() {
 	exit ${EXIT_CODE:-1}
 }
 
+to_boolean() {
+	local RESULT="false"
+	case "${1,,}" in
+		true | t | yes | y | 1 | on | enable | enabled | active ) RESULT="true" ;;
+	esac
+	echo "${RESULT}"
+	return 0
+}
+
+[ -v DEVELOPMENT ] || DEVELOPMENT="false"
+# Sanitize to ensure proper value is consumed below
+DEVELOPMENT="$(to_boolean "${DEVELOPMENT}")"
+
+#
+# Update the SSL certificate trusts
+#
 [ -v SSL_DIR ] || SSL_DIR="/.ssl"
 acme-init
 
@@ -18,15 +34,9 @@ acme-init
 #
 add-developer
 
-case "${DEVELOPMENT,,}" in
-	true | t | yes | y | on | enabled | enable | en | 1 ) DEVELOPMENT="true" ;;
-	* ) DEVELOPMENT="false" ;;
-esac
-
 CLOUDCONFIG="$(type -P cloudconfig)" || fail "The cloudconfig executable was not found in the path"
 
 CMD=("${CLOUDCONFIG}" "${@}")
-
 say "Launching as: ${CMD[@]@Q}"
 
 # If development mode is not active, just launch!
