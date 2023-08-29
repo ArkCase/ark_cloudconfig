@@ -49,6 +49,16 @@ DATA_DIR="$(readlink -f "${DATA_DIR}")"
 acme-init
 
 #
+# In case of development mode...
+#
+add-developer
+
+case "${DEVELOPMENT,,}" in
+	true | t | yes | y | on | enabled | enable | en | 1 ) DEVELOPMENT="true" ;;
+	* ) DEVELOPMENT="false" ;;
+esac
+
+#
 # If our configuration is missing or empty, we render a new one
 #
 if [ ! -s "${CONF}" ] ; then
@@ -108,4 +118,16 @@ CONF="$(urlencode "${CONF}")"
 [ -v JAVA_OPTS ] || JAVA_OPTS=""
 JAVA_OPTS+=" -Dserver.ssl.key-alias=acme -Dserver.ssl.key-store=${SSL_DIR}/keystore.pkcs12 -Dserver.ssl.key-store-password=$(<"${SSL_DIR}"/keystore.pass)"
 
-exec "${JAVA}" ${JAVA_OPTS} -jar "${EXE_JAR}" "${@}"
+CMD=("${JAVA}" ${JAVA_OPTS} -jar "${EXE_JAR}" "${@}")
+
+say "Launching as: ${CMD[@]@Q}"
+
+# If development mode is not active, just launch!
+${DEVELOPMENT} || exec "${CMD[@]}"
+
+# If development mode is active, we have to resort to some trickery
+say "ID prior to development mode: $(id)"
+exec /usr/bin/newgrp developer <<-EOF
+	echo "ID changed for development mode: $(id)"
+	exec "${CMD[@]@Q}"
+EOF

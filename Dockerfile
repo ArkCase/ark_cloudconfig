@@ -86,7 +86,11 @@ RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --groups "${ACM_GR
 #################################
 ADD --chown="${APP_USER}:${APP_GROUP}" "${SRC}" "${BASE_DIR}/${EXE_JAR}"
 ADD --chown="${APP_USER}:${APP_GROUP}" "entrypoint" "/entrypoint"
-COPY --chown=root:root "check-ready" "/usr/local/bin/"
+
+COPY --chown=root:root "add-developer" "check-ready" "/usr/local/bin/"
+COPY --chown=root:root 01-add-developer /etc/sudoers.d
+RUN chmod 0640 /etc/sudoers.d/01-add-developer && \
+    sed -i -e "s;\${ACM_GROUP};${ACM_GROUP};g" /etc/sudoers.d/01-add-developer
 
 ####################################
 # Final preparations for execution #
