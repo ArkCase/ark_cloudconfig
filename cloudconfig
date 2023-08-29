@@ -2,7 +2,7 @@
 set -eu -o pipefail
 
 say() {
-	echo -e "${@}"
+	echo -e "$(date -u -Ins): ${@}"
 }
 
 fail() {
