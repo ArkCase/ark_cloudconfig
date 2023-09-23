@@ -2,7 +2,7 @@
 set -eu -o pipefail
 
 say() {
-	echo -e "$(date -u -Ins): ${@}"
+	echo -e "$(/usr/bin/date -u -Ins): ${@}"
 }
 
 fail() {
@@ -41,10 +41,16 @@ JAVA="$(type -P java)" || fail "No Java found in the path"
 [ -r "${DATA_DIR}" ] || fail "The data directory at [${DATA_DIR}] is not readable"
 [ -w "${DATA_DIR}" ] || fail "The data directory at [${DATA_DIR}] is not writable"
 [ -x "${DATA_DIR}" ] || fail "The data directory at [${DATA_DIR}] is not executable"
-DATA_DIR="$(readlink -f "${DATA_DIR}")"
+DATA_DIR="$(/usr/bin/readlink -f "${DATA_DIR}")"
 
 [ -v MAIN_CONF ] || MAIN_CONF="application.yaml"
 [ -v CONF ] || CONF="${DATA_DIR}/${MAIN_CONF}"
+
+#
+# Update the SSL certificate trusts
+#
+[ -v SSL_DIR ] || SSL_DIR="/.ssl"
+/usr/local/bin/acme-init
 
 #
 # If our configuration is missing or empty, we render a new one
@@ -65,7 +71,7 @@ if [ ! -s "${CONF}" ] ; then
 		SEARCH_LOCATIONS="${SEARCH_LOCATIONS}file://${LOCATION}"
 	done
 	[ -v ACTIVEMQ_URL ] || ACTIVEMQ_URL="tcp://messaging:61616"
-	cat > "${CONF}" <<- EOF
+	/usr/bin/cat > "${CONF}" <<- EOF
 	server
 	  port: "9999"
 	spring.profiles.active: native
@@ -90,7 +96,7 @@ if [ ! -s "${CONF}" ] ; then
 	java.io.tmpdir: "${TEMP_DIR}"
 	EOF
 fi
-CONF="$(readlink -f "${CONF}")"
+CONF="$(/usr/bin/readlink -f "${CONF}")"
 
 #
 # Make sure the configuration file gets URL-encoded
