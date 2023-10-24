@@ -3,7 +3,7 @@
 #
 ARG PUBLIC_REGISTRY="public.ecr.aws"
 ARG BASE_REPO="arkcase/base"
-ARG BASE_TAG="8-01"
+ARG BASE_TAG="8-02"
 ARG ARTIFACTS_REPO="arkcase/artifacts"
 ARG ARTIFACTS_TAG="1.4.0-01"
 ARG ARCH="amd64"
