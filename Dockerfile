@@ -2,14 +2,9 @@
 # Basic Parameters
 #
 ARG PUBLIC_REGISTRY="public.ecr.aws"
-ARG BASE_REPO="arkcase/base"
-ARG BASE_TAG="8-02"
-ARG ARTIFACTS_REPO="arkcase/artifacts"
-ARG ARTIFACTS_TAG="1.4.0-01"
 ARG ARCH="amd64"
 ARG OS="linux"
 ARG VER="2022.04-SNAPSHOT"
-ARG BLD="01"
 ARG PKG="cloudconfig"
 ARG SRC="com.armedia.acm:config-server:${VER}:jar"
 ARG APP_USER="${PKG}"
@@ -23,12 +18,20 @@ ARG TEMP_DIR="${BASE_DIR}/tmp"
 ARG HOME_DIR="${BASE_DIR}/home"
 ARG EXE_JAR="config-server-${VER}.jar"
 
+ARG ARTIFACTS_REPO="arkcase/artifacts"
+ARG ARTIFACTS_VER="1.4.0"
+ARG ARTIFACTS_IMG="${PUBLIC_REGISTRY}/${ARTIFACTS_REPO}:${ARTIFACTS_VER}"
+
+ARG BASE_REPO="arkcase/base"
+ARG BASE_VER="8"
+ARG BASE_IMG="${PUBLIC_REGISTRY}/${BASE_REPO}:${BASE_VER}"
+
 #
 # The repo from which to pull everything
 #
 ARG ARKCASE_MVN_REPO="https://project.armedia.com/nexus/repository/arkcase/"
 
-FROM "${PUBLIC_REGISTRY}/${ARTIFACTS_REPO}:${ARTIFACTS_TAG}" as src
+FROM "${ARTIFACTS_IMG}" as src
 
 ARG SRC
 ARG EXE_JAR
@@ -36,7 +39,7 @@ ARG ARKCASE_MVN_REPO
 
 RUN mvn-get "${SRC}" "${ARKCASE_MVN_REPO}" "/${EXE_JAR}"
 
-FROM "${PUBLIC_REGISTRY}/${BASE_REPO}:${BASE_TAG}"
+FROM "${BASE_IMG}"
 
 #
 # Basic Parameters
