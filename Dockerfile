@@ -4,7 +4,7 @@
 ARG PUBLIC_REGISTRY="public.ecr.aws"
 ARG ARCH="amd64"
 ARG OS="linux"
-ARG VER="2022.04-SNAPSHOT"
+ARG VER="2024.01.01-SNAPSHOT"
 ARG PKG="cloudconfig"
 ARG SRC="com.armedia.acm:config-server:${VER}:jar"
 ARG APP_USER="${PKG}"
