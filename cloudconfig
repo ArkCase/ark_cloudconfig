@@ -70,7 +70,7 @@ DATA_DIR="$(/usr/bin/readlink -f "${DATA_DIR}")"
 #
 # Update the SSL certificate trusts
 #
-/usr/local/bin/acme-init wait
+/usr/local/bin/acme-init
 
 #
 # If our configuration is missing or empty, we render a new one
