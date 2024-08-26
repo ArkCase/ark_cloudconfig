@@ -1,16 +1,9 @@
 #!/bin/bash
+
 set -eu -o pipefail
+. /.functions
 
-say() {
-	echo -e "$(/usr/bin/date -u -Ins): ${@}"
-}
-
-fail() {
-	say "${@}" 1>&2
-	exit ${EXIT_CODE:-1}
-}
-
-CLOUDCONFIG="$(type -P cloudconfig)" || fail "The cloudconfig executable was not found in the path"
+require_exe cloudconfig
 
 # We use a wrapper script that *should* do the right thing with
 # respect to user IDs, groupIds, etc

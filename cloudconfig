@@ -1,88 +1,35 @@
 #!/bin/bash
+
 set -eu -o pipefail
+. /.functions
 
-timestamp()
-{
-	date -Ins -u
-}
-
-say()
-{
-	echo -e "$(timestamp): ${@}"
-}
-
-err()
-{
-	say "❌ ${@}"
-}
-
-fail()
-{
-	err "${@}"
-	exit ${EXIT_CODE:-1}
-}
-
-urlencode()
-{
-	local STR="${1}"
-	local LEN=${#STR}
-	local RESULT=""
-	local POS C O
-
-	for (( POS=0 ; POS < LEN ; POS++ )); do
-		C=${STR:$POS:1}
-		case "${C}" in
-			[-_.~a-zA-Z0-9/] )	O="${C}" ;;
-			* )					printf -v O '%%%02x' "'${C}"
-		esac
-		RESULT+="${O}"
-	done
-	echo "${RESULT}"
-}
-
-type -P java &>/dev/null || fail "No Java found in the path"
+ensure_exe java
 
 [ -v EXE_JAR ] || fail "No executable JAR name has been provided"
 
-[ -v BASE_DIR ] || BASE_DIR=""
-[ -n "${BASE_DIR}" ] || BASE_DIR="/app"
+set_or_default BASE_DIR "/app"
+set_or_default DATA_DIR "${BASE_DIR}/data"
+set_or_default INIT_DIR "${BASE_DIR}/init"
 
-[ -v DATA_DIR ] || DATA_DIR=""
-[ -n "${DATA_DIR}" ] || DATA_DIR="${BASE_DIR}/data"
+require_dir_readwrite "${DATA_DIR}"
 
-[ -v INIT_DIR ] || INIT_DIR=""
-[ -n "${INIT_DIR}" ] || INIT_DIR="${BASE_DIR}/init"
-
-[ -n "${DATA_DIR}" ] || fail "The DATA_DIR environment variable may not be empty"
-[ -e "${DATA_DIR}" ] || fail "The data directory at [${DATA_DIR}] does not exist"
-[ -d "${DATA_DIR}" ] || fail "The data directory path [${DATA_DIR}] is not a directory"
-[ -r "${DATA_DIR}" ] || fail "The data directory at [${DATA_DIR}] is not readable"
-[ -w "${DATA_DIR}" ] || fail "The data directory at [${DATA_DIR}] is not writable"
-[ -x "${DATA_DIR}" ] || fail "The data directory at [${DATA_DIR}] is not executable"
 DATA_DIR="$(/usr/bin/readlink -f "${DATA_DIR}")"
 
-[ -v MAIN_CONF ] || MAIN_CONF=""
-[ -n "${MAIN_CONF}" ] || MAIN_CONF="application.yaml"
-
-[ -v CONF ] || CONF=""
-[ -n "${CONF}" ] || CONF="${DATA_DIR}/${MAIN_CONF}"
+set_or_default MAIN_CONF "application.yaml"
+set_or_default CONF "${DATA_DIR}/${MAIN_CONF}"
 
 #
 # Update the SSL certificate trusts
 #
-/usr/local/bin/acme-init
+init_ssl
 
 #
 # If our configuration is missing or empty, we render a new one
 #
-[ -e "${CONF}" ] || fail "The configuration file at [${CONF}] does not exist"
-[ -f "${CONF}" ] || fail "The configuration file path [${CONF}] is not a file"
-[ -r "${CONF}" ] || fail "The configuration file at [${CONF}] is not readable"
-[ -s "${CONF}" ] || fail "The configuration file at [${CONF}] is empty"
+require_file_readable "${CONF}"
 
 # Add the ability to modify the environment
-[ -v ENV_FILE ] || ENV_FILE="/.env"
-[ -n "${ENV_FILE}" ] || ENV_FILE="/.env"
+set_or_default ENV_FILE "/.env"
 
 [ -s "${ENV_FILE}" ] && . "${ENV_FILE}"
 
@@ -96,7 +43,4 @@ CONF="$(urlencode "${CONF}")"
 # Execute it!
 #
 [ ${#} -lt 1 ] && set -- --spring.config.location="file://${CONF}"
-
-CMD=(java -jar "${EXE_JAR}" "${@}")
-say "🚀 Launching as: ${CMD[@]@Q}"
-exec "${CMD[@]}"
+execute java -jar "${EXE_JAR}" "${@}"
