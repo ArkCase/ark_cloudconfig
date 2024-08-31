@@ -3,7 +3,7 @@
 set -eu -o pipefail
 . /.functions
 
-ensure_exe java
+require_exe java
 
 [ -v EXE_JAR ] || fail "No executable JAR name has been provided"
 
