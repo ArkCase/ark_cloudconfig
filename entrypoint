@@ -1,10 +1,10 @@
 #!/bin/bash
 
-set -eu -o pipefail
+set -euo pipefail
 . /.functions
 
-require_exe cloudconfig
+require_exe run-developer /usr/local/bin/cloudconfig
 
 # We use a wrapper script that *should* do the right thing with
-# respect to user IDs, groupIds, etc
-exec "/usr/local/bin/run-developer" "${CLOUDCONFIG}" "${@}"
+# respect to user IDs, groupIds, etc.
+exec run-developer /usr/local/bin/cloudconfig "${@}"
