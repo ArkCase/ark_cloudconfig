@@ -6,6 +6,7 @@ set -eu -o pipefail
 require_exe java
 
 [ -v EXE_JAR ] || fail "No executable JAR name has been provided"
+require_file_readable "${EXE_JAR}"
 
 set_or_default BASE_DIR "/app"
 set_or_default DATA_DIR "${BASE_DIR}/data"
@@ -13,7 +14,7 @@ set_or_default INIT_DIR "${BASE_DIR}/init"
 
 require_dir_readwrite "${DATA_DIR}"
 
-DATA_DIR="$(/usr/bin/readlink -f "${DATA_DIR}")"
+DATA_DIR="$(readlink -f "${DATA_DIR}")"
 
 set_or_default MAIN_CONF "application.yaml"
 set_or_default CONF "${DATA_DIR}/${MAIN_CONF}"
@@ -24,9 +25,10 @@ set_or_default CONF "${DATA_DIR}/${MAIN_CONF}"
 init_ssl
 
 #
-# If our configuration is missing or empty, we render a new one
+# Make sure the configuration file exists and is readable
 #
 require_file_readable "${CONF}"
+CONF="$(readlink -f "${CONF}")"
 
 # Add the ability to modify the environment
 set_or_default ENV_FILE "/.env"
@@ -36,11 +38,17 @@ set_or_default ENV_FILE "/.env"
 #
 # Make sure the configuration file gets URL-encoded
 #
-CONF="$(/usr/bin/readlink -f "${CONF}")"
 CONF="$(urlencode_path "${CONF}")"
 
 #
 # Execute it!
 #
 [ ${#} -lt 1 ] && set -- --spring.config.location="file://${CONF}"
-execute java -jar "${EXE_JAR}" "${@}"
+CMD=(java -jar "${EXE_JAR}" "${@}")
+
+# In development mode, we take a slight detour b/c we'll want to run
+# the cloudconfig process in a loop so we can restart it over and over
+# without crashing the pod
+as_boolean "${DEVELOPER:-false}" && CMD=( run-in-loop "${CMD[@]}" )
+
+execute "${CMD[@]}"
