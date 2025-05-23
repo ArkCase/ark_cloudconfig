@@ -5,6 +5,7 @@ ARG PUBLIC_REGISTRY="public.ecr.aws"
 ARG ARCH="amd64"
 ARG OS="linux"
 ARG VER="2.0.0"
+ARG JAVA="11"
 ARG PKG="cloudconfig"
 ARG SRC="com.armedia.acm:config-server:${VER}:jar"
 ARG APP_USER="${PKG}"
@@ -19,7 +20,7 @@ ARG HOME_DIR="${BASE_DIR}/home"
 ARG EXE_JAR="config-server-${VER}.jar"
 
 ARG BASE_REGISTRY="${PUBLIC_REGISTRY}"
-ARG BASE_REPO="arkcase/base"
+ARG BASE_REPO="arkcase/base-java"
 ARG BASE_VER="8"
 ARG BASE_VER_PFX=""
 ARG BASE_IMG="${BASE_REGISTRY}/${BASE_REPO}:${BASE_VER_PFX}${BASE_VER}"
@@ -52,6 +53,7 @@ FROM "${BASE_IMG}"
 ARG ARCH
 ARG OS
 ARG VER
+ARG JAVA
 ARG PKG
 ARG CONF_TYPE
 ARG CONF_SRC
@@ -76,7 +78,6 @@ ENV APP_UID="${APP_UID}"
 ENV APP_GID="${APP_GID}"
 ENV APP_USER="${APP_USER}"
 ENV APP_GROUP="${APP_GROUP}"
-ENV JAVA_HOME="/usr/lib/jvm/java"
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
@@ -90,14 +91,11 @@ ENV HOME="${HOME_DIR}"
 
 WORKDIR "${BASE_DIR}"
 
-##########################
-# First, install the JDK #
-##########################
+############################
+# First, set the right JVM #
+############################
 
-RUN yum -y install \
-        java-11-openjdk-devel \
-    && \
-    yum -y clean all
+RUN set-java "${JAVA}"
 
 #######################################
 # Create the requisite user and group #
