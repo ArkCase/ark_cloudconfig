@@ -25,25 +25,10 @@ ARG BASE_VER="8"
 ARG BASE_VER_PFX=""
 ARG BASE_IMG="${BASE_REGISTRY}/${BASE_REPO}:${BASE_VER_PFX}${BASE_VER}"
 
-ARG ARTIFACTS_REPO="arkcase/artifacts"
-ARG ARTIFACTS_VER="1.5.1"
-ARG ARTIFACTS_IMG="${BASE_REGISTRY}/${ARTIFACTS_REPO}:${BASE_VER_PFX}${ARTIFACTS_VER}"
-
 #
 # The repo from which to pull everything
 #
 ARG ARKCASE_MVN_REPO="https://nexus.armedia.com/repository/arkcase/"
-
-FROM "${ARTIFACTS_IMG}" as src
-
-ARG SRC
-ARG EXE_JAR
-ARG ARKCASE_MVN_REPO
-
-#
-# Download cloudconfig from Nexus
-#
-RUN mvn-get "${SRC}" "${ARKCASE_MVN_REPO}" "/${EXE_JAR}"
 
 FROM "${BASE_IMG}"
 
@@ -55,6 +40,7 @@ ARG OS
 ARG VER
 ARG JAVA
 ARG PKG
+ARG SRC
 ARG CONF_TYPE
 ARG CONF_SRC
 ARG APP_USER
@@ -67,6 +53,8 @@ ARG INIT_DIR
 ARG TEMP_DIR
 ARG HOME_DIR
 ARG EXE_JAR
+
+ARG ARKCASE_MVN_REPO
 
 LABEL ORG="ArkCase LLC"
 LABEL MAINTAINER="Armedia Devops Team <devops@armedia.com>"
@@ -107,7 +95,8 @@ RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --groups "${ACM_GR
 # COPY the application jar file #
 #################################
 ADD --chown="${APP_USER}:${APP_GROUP}" "entrypoint" "/entrypoint"
-COPY --from=src --chown="${APP_USER}:${APP_GROUP}" "/${EXE_JAR}" "${BASE_DIR}/${EXE_JAR}"
+RUN mvn-get "${SRC}" "${ARKCASE_MVN_REPO}" "${BASE_DIR}/${EXE_JAR}" && \
+    chown "${APP_USER}:${APP_GROUP}" "${BASE_DIR}/${EXE_JAR}"
 
 COPY --chown=root:root "run-developer" "cloudconfig" "check-ready" "/usr/local/bin/"
 COPY --chown=root:root 01-developer-mode /etc/sudoers.d
