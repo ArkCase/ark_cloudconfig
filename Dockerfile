@@ -12,16 +12,10 @@ ARG APP_USER="${PKG}"
 ARG APP_UID="1997"
 ARG APP_GROUP="${APP_USER}"
 ARG APP_GID="${APP_UID}"
-ARG BASE_DIR="/app"
-ARG DATA_DIR="${BASE_DIR}/data"
-ARG INIT_DIR="${BASE_DIR}/init"
-ARG TEMP_DIR="${BASE_DIR}/tmp"
-ARG HOME_DIR="${BASE_DIR}/home"
-ARG EXE_JAR="config-server-${VER}.jar"
 
 ARG BASE_REGISTRY="${PUBLIC_REGISTRY}"
 ARG BASE_REPO="arkcase/base-java"
-ARG BASE_VER="8"
+ARG BASE_VER="22.04"
 ARG BASE_VER_PFX=""
 ARG BASE_IMG="${BASE_REGISTRY}/${BASE_REPO}:${BASE_VER_PFX}${BASE_VER}"
 
@@ -41,18 +35,10 @@ ARG VER
 ARG JAVA
 ARG PKG
 ARG SRC
-ARG CONF_TYPE
-ARG CONF_SRC
 ARG APP_USER
 ARG APP_UID
 ARG APP_GROUP
 ARG APP_GID
-ARG BASE_DIR
-ARG DATA_DIR
-ARG INIT_DIR
-ARG TEMP_DIR
-ARG HOME_DIR
-ARG EXE_JAR
 
 ARG ARKCASE_MVN_REPO
 
@@ -69,12 +55,7 @@ ENV APP_GROUP="${APP_GROUP}"
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
-ENV BASE_DIR="${BASE_DIR}"
-ENV DATA_DIR="${DATA_DIR}"
-ENV INIT_DIR="${INIT_DIR}"
-ENV TEMP_DIR="${TEMP_DIR}"
-ENV HOME_DIR="${HOME_DIR}"
-ENV EXE_JAR="${EXE_JAR}"
+ENV HOME_DIR="${BASE_DIR}/${PKG}"
 ENV HOME="${HOME_DIR}"
 
 WORKDIR "${BASE_DIR}"
@@ -88,30 +69,29 @@ RUN set-java "${JAVA}"
 #######################################
 # Create the requisite user and group #
 #######################################
-RUN groupadd --system --gid "${APP_GID}" "${APP_GROUP}"
-RUN useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --groups "${ACM_GROUP}" --create-home --home-dir "${HOME_DIR}" "${APP_USER}"
+RUN groupadd --system --gid "${APP_GID}" "${APP_GROUP}" && \
+    useradd  --system --uid "${APP_UID}" --gid "${APP_GROUP}" --groups "${ACM_GROUP}" --create-home --home-dir "${HOME_DIR}" "${APP_USER}"
 
 #################################
 # COPY the application jar file #
 #################################
-ADD --chown="${APP_USER}:${APP_GROUP}" "entrypoint" "/entrypoint"
-RUN mvn-get "${SRC}" "${ARKCASE_MVN_REPO}" "${BASE_DIR}/${EXE_JAR}" && \
-    chown "${APP_USER}:${APP_GROUP}" "${BASE_DIR}/${EXE_JAR}"
+ENV EXE_JAR="${BASE_DIR}/${PKG}-${VER}.jar"
+ADD --chown="${APP_USER}:${APP_GROUP}" --chmod=0755 "entrypoint" "/entrypoint"
+RUN mvn-get "${SRC}" "${ARKCASE_MVN_REPO}" "${EXE_JAR}" && \
+    chmod 0444 "${EXE_JAR}"
 
-COPY --chown=root:root "run-developer" "cloudconfig" "check-ready" "/usr/local/bin/"
-COPY --chown=root:root 01-developer-mode /etc/sudoers.d
-RUN chmod 0640 /etc/sudoers.d/01-developer-mode && \
-    sed -i -e "s;\${ACM_GROUP};${ACM_GROUP};g" /etc/sudoers.d/01-developer-mode
+COPY --chown=root:root --chmod=0755 scripts/* "/usr/local/bin/"
+COPY --chown=root:root --chmod=0444 01-developer-mode /etc/sudoers.d
+RUN sed -i -e "s;\${ACM_GROUP};${ACM_GROUP};g" /etc/sudoers.d/01-developer-mode
 
 ####################################
 # Final preparations for execution #
 ####################################
-RUN rm -rf /tmp/*
-RUN mkdir -p "${TEMP_DIR}" "${DATA_DIR}"
-RUN chown -R "${APP_USER}:${APP_GROUP}" "${BASE_DIR}"
-RUN chmod -R "u=rwX,g=rX,o=" "${BASE_DIR}"
+RUN rm -rf /tmp/* && \
+    mkdir -p "${TEMP_DIR}" "${DATA_DIR}" && \
+    chown -R "${APP_USER}:${APP_GROUP}" "${BASE_DIR}" && \
+    chmod -R "u=rwX,g=rX,o=" "${BASE_DIR}"
 
 USER "${APP_USER}"
 EXPOSE 9999
-VOLUME [ "${DATA_DIR}" ]
 ENTRYPOINT [ "/entrypoint" ]
