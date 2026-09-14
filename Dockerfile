@@ -78,7 +78,9 @@ RUN groupadd --system --gid "${APP_GID}" "${APP_GROUP}" && \
 #################################
 ENV EXE_JAR="${BASE_DIR}/${PKG}-${VER}.jar"
 ADD --chown="${APP_USER}:${APP_GROUP}" --chmod=0755 "entrypoint" "/entrypoint"
-RUN mvn-get "${SRC}" "${ARKCASE_MVN_REPO}" "${EXE_JAR}" && \
+RUN --mount=type=secret,id=mvn_get_auth,uid=${APP_UID},gid=${APP_GID} \
+    . /run/secrets/mvn_get_auth && \
+    mvn-get "${SRC}" "${ARKCASE_MVN_REPO}" "${EXE_JAR}" && \
     chmod 0444 "${EXE_JAR}"
 
 COPY --chown=root:root --chmod=0755 scripts/* "/usr/local/bin/"
