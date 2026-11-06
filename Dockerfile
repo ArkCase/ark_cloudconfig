@@ -84,7 +84,7 @@ RUN --mount=type=secret,id=mvn_get_auth,uid=${APP_UID},gid=${APP_GID} \
     chmod 0444 "${EXE_JAR}"
 
 COPY --chown=root:root --chmod=0755 scripts/* "/usr/local/bin/"
-COPY --chown=root:root --chmod=0444 01-developer-mode /etc/sudoers.d
+COPY --chown=root:root --chmod=0440 01-developer-mode /etc/sudoers.d
 RUN sed -i -e "s;\${ACM_GROUP};${ACM_GROUP};g" /etc/sudoers.d/01-developer-mode
 
 ####################################
